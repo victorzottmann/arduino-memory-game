@@ -1,9 +1,23 @@
-void setup() {
-  // put your setup code here, to run once:
+#define redLed 2
+int count;
 
+void setup() {
+  Serial.begin(9600);
+  pinMode(redLed, OUTPUT);
+  count = 0;
+}
+
+void blink() {
+  digitalWrite(redLed, HIGH);
+  delay(1000);
+  digitalWrite(redLed, LOW);
+  delay(1000);
+  
+  count++;
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+  while (count <= 3) {
+    blink();
+  }
 }
