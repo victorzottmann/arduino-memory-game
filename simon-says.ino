@@ -8,9 +8,9 @@ int ledList[4];
 
 void setup() {
   Serial.begin(9600);
+  startGame();
   initialiseLedPins();      // set the LED pins to OUTPUT mode
   setLedsToLowOnStartUp();  // set the LED pins to LOW when the program starts
-  startGame();
 }
 
 void initialiseLedPins() {
@@ -26,10 +26,10 @@ void setLedsToLowOnStartUp() {
 }
 
 void startGame() {
-  ledList[0] = RED_LED;
+  ledList[0] = BLUE_LED;
   ledList[1] = GREEN_LED;
-  ledList[2] = YELLOW_LED;
-  ledList[3] = BLUE_LED;
+  ledList[2] = RED_LED;
+  ledList[3] = YELLOW_LED;
 }
 
 void blink(int ledPin) {
