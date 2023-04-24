@@ -43,4 +43,6 @@ void loop() {
   for (int i = 0; i < sizeof(ledList); i++) {
     blink(ledList[i]);
   }
+
+  while (true) {} // just so it runs the for loop above only once
 }
