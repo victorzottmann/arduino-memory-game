@@ -4,19 +4,32 @@
 #define BLUE_LED 2
 
 int count = 0;
+int ledList[4];
 
 void setup() {
   Serial.begin(9600);
-  pinMode(RED_LED, OUTPUT);
-  pinMode(GREEN_LED, OUTPUT);
-  pinMode(YELLOW_LED, OUTPUT);
-  pinMode(BLUE_LED, OUTPUT);
+  initialiseLedPins();      // set the LED pins to OUTPUT mode
+  setLedsToLowOnStartUp();  // set the LED pins to LOW when the program starts
+  startGame();
+}
 
-  // set the LED pins to LOW when the program starts
-  digitalWrite(RED_LED, LOW); 
-  digitalWrite(GREEN_LED, LOW);
-  digitalWrite(YELLOW_LED, LOW);
-  digitalWrite(BLUE_LED, LOW);
+void initialiseLedPins() {
+  for (int i = 0; i < sizeof(ledList); i++) {
+    pinMode(ledList[i], OUTPUT);
+  }
+}
+
+void setLedsToLowOnStartUp() {
+  for (int i = 0; i < sizeof(ledList); i++) {
+    digitalWrite(ledList[i], LOW);
+  }
+}
+
+void startGame() {
+  ledList[0] = RED_LED;
+  ledList[1] = GREEN_LED;
+  ledList[2] = YELLOW_LED;
+  ledList[3] = BLUE_LED;
 }
 
 void blink(int ledPin) {
@@ -26,28 +39,8 @@ void blink(int ledPin) {
   delay(500);
 }
 
-void firstBlinkSequence() {
-  blink(RED_LED);
-  blink(GREEN_LED);
-  blink(YELLOW_LED);
-  blink(BLUE_LED);
-  delay(500);
-}
-
-void secondBlinkSequence() {
-  digitalWrite(RED_LED, HIGH);
-  digitalWrite(GREEN_LED, HIGH);
-  digitalWrite(YELLOW_LED, HIGH);
-  digitalWrite(BLUE_LED, HIGH);
-  delay(1000);
-  digitalWrite(RED_LED, LOW);
-  digitalWrite(GREEN_LED, LOW);
-  digitalWrite(YELLOW_LED, LOW);
-  digitalWrite(BLUE_LED, LOW);
-  delay(500);
-}
-
 void loop() {
-  firstBlinkSequence();
-  secondBlinkSequence();
+  for (int i = 0; i < sizeof(ledList); i++) {
+    blink(ledList[i]);
+  }
 }
