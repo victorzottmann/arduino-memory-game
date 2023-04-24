@@ -6,9 +6,10 @@
 #define GREEN_LED 4
 #define YELLOW_LED 3
 #define BLUE_LED 2
+#define LED_SEQUENCE_SIZE 4
 #define UNDEFINED -1
 
-int ledPins[4];
+int ledPins[LED_SEQUENCE_SIZE];
 int btnPins[] = { RED_BTN, GREEN_BTN, YELLOW_BTN, BLUE_BTN };
 
 void setup() {
@@ -18,10 +19,13 @@ void setup() {
 }
 
 void startGame() {
-  ledPins[0] = BLUE_LED;
-  ledPins[1] = GREEN_LED;
-  ledPins[2] = RED_LED;
-  ledPins[3] = YELLOW_LED;
+  for (int i = 0; i < LED_SEQUENCE_SIZE; i++) {
+    ledPins[i] = randomLedPicker();
+  }
+}
+
+int randomLedPicker() {
+  return random(BLUE_LED, RED_LED + 1); // random from 2 to 5 (if no +1, the range would go between 2 and 4)
 }
 
 void setPins() {
@@ -45,24 +49,25 @@ void triggerBtnAndLed(int btnPin, int ledPin) {
   }
 }
 
+int blink(int ledPin) {
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+  digitalWrite(ledPin, LOW);
+  delay(500);
+  return ledPin;
+}
+
 int verifyUserInput() {
-  if (digitalRead(RED_BTN) == LOW) {
-    return RED_LED;                               // return the number associated with RED_LED
-  } else if (digitalRead(GREEN_BTN) == LOW) {
-    return GREEN_LED;                             // return the number associated with GREEN_LED
-  } else if (digitalRead(YELLOW_BTN) == LOW) {
-    return YELLOW_LED;                            // return the number associated with YELLOW_LED
-  } else if (digitalRead(BLUE_BTN) == LOW) {
-    return BLUE_LED;                              // return the number associated with BLUE_LED
-  } else {
-    return UNDEFINED;                             // return a number outside the available pin range
-  }
+  if (digitalRead(RED_BTN) == LOW) return blink(RED_LED);       // return the number associated with RED_LED when it blinks
+  if (digitalRead(GREEN_BTN) == LOW) return blink(GREEN_LED);   // return the number associated with GREEN_LED when it blinks
+  if (digitalRead(YELLOW_BTN) == LOW) return blink(YELLOW_LED); // return the number associated with YELLOW_LED when it blinks
+  if (digitalRead(BLUE_BTN) == LOW) return blink(BLUE_LED);     // return the number associated with BLUE_LED when it blinks
+  return UNDEFINED;                                             // return a number outside the available pin range
 }
 
 void loop() {
-  triggerBtnAndLed(RED_BTN, RED_LED);
-  triggerBtnAndLed(GREEN_BTN, GREEN_LED);
-  triggerBtnAndLed(YELLOW_BTN, YELLOW_LED);
-  triggerBtnAndLed(BLUE_BTN, BLUE_LED);
+  for (int i = 0; i < LED_SEQUENCE_SIZE; i++) {
+    blink(ledPins[i]);
+  }
   Serial.println(verifyUserInput());
 }
