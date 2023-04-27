@@ -16,12 +16,13 @@
 // global variables
 int ledPins[LED_SEQUENCE_SIZE];
 int btnPins[] = { RED_BTN, GREEN_BTN, YELLOW_BTN, BLUE_BTN };
+int currentRound = 0;
 
 enum States {
   READY_FOR_NEXT_ROUND,
   USER_IS_PLAYING,
   VICTORY,
-  GAME_OVER_FAILURE
+  GAME_OVER
 };
 
 void setup() {
@@ -63,6 +64,7 @@ void setPins() {
   }
 }
 
+// keeping this function here for reference
 void triggerBtnAndLed(int btnPin, int ledPin) {
   int btnState = digitalRead(btnPin);
 
@@ -89,23 +91,38 @@ int verifyUserInput() {
   return UNDEFINED;                                              // return a number outside the available pin range
 }
 
-void runCurrentLedSequence() {
-  for (int i = 0; i < LED_SEQUENCE_SIZE; i++) {
+void blinkLedsForCurrentRound() {
+  /* 
+    Changed from LED_SEQUENCE_SIZE to check if the blink sequence would adapt accordingly.
+    For example, if in round 1, blink once; if in round 2, blink twice, and so on.
+    Remember not to leave it this way as it was just for testing
+  */
+  for (int i = 0; i < currentRound; i++) {
     blink(ledPins[i]);
   }
 }
 
 int currentGameState() {
-  return READY_FOR_NEXT_ROUND;
+  // Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on 
+  // the level of difficulty as well.
+  if (currentRound < LED_SEQUENCE_SIZE) {
+    return READY_FOR_NEXT_ROUND;    
+  } else {
+    return VICTORY;
+  }
 }
 
-void loop() {
-  runCurrentLedSequence();
+void prepareNextRound() {
+  currentRound++;
+  blinkLedsForCurrentRound();
+}
 
+void switchBetweenGameStates() {
   int state = currentGameState();
   switch (state) {
     case READY_FOR_NEXT_ROUND:
       Serial.println("Ready for the next round");
+      prepareNextRound();
       break;
     case USER_IS_PLAYING:
       Serial.println("The user is playing");
@@ -117,7 +134,12 @@ void loop() {
       Serial.println("Game over");
       break;
   }
+  delay(500); // just for Serial printing the state values to check if it works in the loop()
+}
 
-  while (1) {}  // quick hack to stop the for loop above from repeating after it finishes
+void loop() {
+  switchBetweenGameStates();
+
+  // while (1) {}  // quick hack to stop the above from repeating after it finishes
   // Serial.println(verifyUserInput());
 }
