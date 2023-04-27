@@ -18,10 +18,12 @@ int ledPins[LED_SEQUENCE_SIZE];
 int btnPins[] = { RED_BTN, GREEN_BTN, YELLOW_BTN, BLUE_BTN };
 int currentRound = 0;
 int ledsAnswered = 0;
+int gameOverVictoryCount = 0;
+int gameOverCount = 0;
 
 enum States {
   READY_FOR_NEXT_ROUND,
-  USER_IS_PLAYING,
+  WAITING_FOR_USER_INPUT,
   VICTORY,
   GAME_OVER
 };
@@ -110,7 +112,7 @@ int currentGameState() {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
     } else {
-      return USER_IS_PLAYING;
+      return WAITING_FOR_USER_INPUT;
     }
   } else {
     return VICTORY;
