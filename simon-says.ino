@@ -21,6 +21,7 @@ int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
 int gameOverCount = 0;
 
+// game states
 enum States {
   READY_FOR_NEXT_ROUND,
   WAITING_FOR_USER_INPUT,
@@ -106,16 +107,21 @@ void blinkLedsForCurrentRound() {
 }
 
 int currentGameState() {
-  // Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on
-  // the level of difficulty as well.
+  /*
+    Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on
+    the level of difficulty as well.
+    This also looks very ugly even though it works. Figure out a way to simplify it.
+  */
   if (currentRound <= LED_SEQUENCE_SIZE) {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
     } else {
-      return WAITING_FOR_USER_INPUT;
+      return USER_IS_PLAYING;
     }
-  } else {
+  } else if (currentRound == LED_SEQUENCE_SIZE + 1) {
     return VICTORY;
+  } else {
+    return GAME_OVER;
   }
 }
 
