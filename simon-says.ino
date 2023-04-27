@@ -135,6 +135,43 @@ void processUserInput() {
   ledsAnswered++;
 }
 
+void victoryBlinkSequence() {
+  while (gameOverVictoryCount < 3) {
+    digitalWrite(RED_LED, HIGH);
+    delay(100);
+    digitalWrite(GREEN_LED, HIGH);
+    delay(100);
+    digitalWrite(YELLOW_LED, HIGH);
+    delay(100);
+    digitalWrite(BLUE_LED, HIGH);
+    delay(100);
+    digitalWrite(RED_LED, LOW);
+    delay(100);
+    digitalWrite(GREEN_LED, LOW);
+    delay(100);
+    digitalWrite(YELLOW_LED, LOW);
+    delay(100);
+    digitalWrite(BLUE_LED, LOW);
+    gameOverVictoryCount++;
+  }
+}
+
+void gameOverBlinkSequence() {
+  while (gameOverCount < 3) {
+    digitalWrite(RED_LED, HIGH);
+    digitalWrite(GREEN_LED, HIGH);
+    digitalWrite(YELLOW_LED, HIGH);
+    digitalWrite(BLUE_LED, HIGH);
+    delay(500);
+    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(YELLOW_LED, LOW);
+    digitalWrite(BLUE_LED, LOW);
+    delay(500);
+    gameOverCount++;
+  }
+}
+
 void switchBetweenGameStates() {
   int state = currentGameState();
   switch (state) {
@@ -142,21 +179,22 @@ void switchBetweenGameStates() {
       Serial.println("Ready for the next round");
       prepareNextRound();
       break;
-    case USER_IS_PLAYING:
-      Serial.println("The user is playing");
+    case WAITING_FOR_USER_INPUT:
+      Serial.println("Waiting for user input");
       processUserInput();
       break;
     case VICTORY:
       Serial.println("Hurray! You won the game!");
+      victoryBlinkSequence();
       break;
     case GAME_OVER:
       Serial.println("Game over");
+      gameOverBlinkSequence();
       break;
   }
-  delay(500);  // just for Serial printing the state values to check if it works in the loop()
+  delay(500);
 }
 
 void loop() {
   switchBetweenGameStates();
-  // Serial.println(verifyUserInput());
 }
