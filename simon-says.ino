@@ -11,6 +11,8 @@
 
 // other constants
 #define LED_SEQUENCE_SIZE 4
+#define ALL_ROUNDS_COMPLETED 5
+#define ALL_ROUNDS_NOT_COMPLETED 6
 #define UNDEFINED -1
 
 // global variables
@@ -35,6 +37,26 @@ void setup() {
   setPins();
 }
 
+void setPins() {
+  for (int i = 0; i < sizeof(btnPins); i++) {
+    pinMode(btnPins[i], INPUT_PULLUP);  // set all the Button pins to INPUT_PULLUP mode
+  }
+
+  for (int i = 0; i < sizeof(ledPins); i++) {
+    pinMode(ledPins[i], OUTPUT);    // set all the LED pins to OUTPUT mode
+    digitalWrite(ledPins[i], LOW);  // set all the LED pins to LOW when the program starts
+  }
+}
+
+int randomLedPicker() {
+  /*
+    Random from 2 to 5 (if no +1, the range would go between 2 and 4)
+    I'm using the LED constants instead of numbers to make sure that
+    the randomisation happens for the LEDs themselves in case I change their pins.
+  */
+  return random(BLUE_LED, RED_LED + 1);
+}
+
 void startGame() {
   /* 
     This truly generates a random number given the potentiometer value
@@ -50,38 +72,14 @@ void startGame() {
 
   for (int i = 0; i < LED_SEQUENCE_SIZE; i++) {
     ledPins[i] = randomLedPicker();
+    // Serial.println(ledPins[i]);
   }
-}
-
-int randomLedPicker() {
-  return random(BLUE_LED, RED_LED + 1);  // random from 2 to 5 (if no +1, the range would go between 2 and 4)
-}
-
-void setPins() {
-  for (int i = 0; i < sizeof(btnPins); i++) {
-    pinMode(btnPins[i], INPUT_PULLUP);  // set all the Button pins to INPUT_PULLUP mode
-  }
-
-  for (int i = 0; i < sizeof(ledPins); i++) {
-    pinMode(ledPins[i], OUTPUT);    // set all the LED pins to OUTPUT mode
-    digitalWrite(ledPins[i], LOW);  // set all the LED pins to LOW when the program starts
-  }
-}
-
-// keeping this function here for reference
-void triggerBtnAndLed(int btnPin, int ledPin) {
-  int btnState = digitalRead(btnPin);
-
-  if (btnState == HIGH) {
-    digitalWrite(ledPin, LOW);
-  } else {
-    digitalWrite(ledPin, HIGH);
-  }
+  // Serial.println();
 }
 
 int blink(int ledPin) {
   digitalWrite(ledPin, HIGH);
-  delay(1000);
+  delay(500);
   digitalWrite(ledPin, LOW);
   delay(500);
   return ledPin;
@@ -116,9 +114,9 @@ int currentGameState() {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
     } else {
-      return USER_IS_PLAYING;
+      return WAITING_FOR_USER_INPUT;
     }
-  } else if (currentRound == LED_SEQUENCE_SIZE + 1) {
+  } else if (currentRound == ALL_ROUNDS_COMPLETED) {
     return VICTORY;
   } else {
     return GAME_OVER;
@@ -126,21 +124,49 @@ int currentGameState() {
 }
 
 void prepareNextRound() {
-  currentRound++;
+  delay(800);
   /* 
     ledsAnswered needs to be reset in every round to count how many
     leds the user answered in a given round. 
     For example, if 3 out of 4 were answered then it's game over.
   */
   ledsAnswered = 0;
-
-  if (currentRound < LED_SEQUENCE_SIZE) {
+  currentRound++;
+  if (currentRound <= LED_SEQUENCE_SIZE) {
     blinkLedsForCurrentRound();
   }
 }
 
 void processUserInput() {
-  ledsAnswered++;
+  int answer = verifyUserInput();
+
+  if (answer == UNDEFINED) {
+    return;
+  }
+
+  Serial.println(ledsAnswered); // first
+  Serial.println(ledPins[ledsAnswered]); // second
+  // Serial.println(currentRound);
+
+  /* 
+    currentRound = 1
+    Assume that the ledPins sequence is { 2, 4, 5, 2 }, or { blue, green, red, blue }
+    and that ledsAnswered is 0 in the first round.
+    If the user presses the blue button then the condition will be true since the
+    answer (pin 2) is equal to the ledPins[0] (blue).
+
+    currentRound = 2
+    In round 2, the sequence will be { 2, 4 }, or { blue, green }.
+    ledsAnswered is reset to 0.
+    ledsAnswered[0] = 2, ledsAnswered++ 
+    ledsAnswered[1] = 4, ledsAnswered++
+  */
+  if (answer == ledPins[ledsAnswered]) {
+    ledsAnswered++;
+  } else {
+    // Serial.println("Wrong answer!");
+    currentRound = ALL_ROUNDS_NOT_COMPLETED;
+  }
 }
 
 void victoryBlinkSequence() {
@@ -184,23 +210,22 @@ void switchBetweenGameStates() {
   int state = currentGameState();
   switch (state) {
     case READY_FOR_NEXT_ROUND:
-      Serial.println("Ready for the next round");
+      // Serial.println("Ready for the next round");
       prepareNextRound();
       break;
     case WAITING_FOR_USER_INPUT:
-      Serial.println("Waiting for user input");
+      // Serial.println("Waiting for user input");
       processUserInput();
       break;
     case VICTORY:
-      Serial.println("Hurray! You won the game!");
+      // Serial.println("Hurray! You won the game!");
       victoryBlinkSequence();
       break;
     case GAME_OVER:
-      Serial.println("Game over");
+      // Serial.println("Game over");
       gameOverBlinkSequence();
       break;
   }
-  delay(500);
 }
 
 void loop() {
