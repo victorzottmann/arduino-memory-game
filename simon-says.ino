@@ -17,6 +17,7 @@
 int ledPins[LED_SEQUENCE_SIZE];
 int btnPins[] = { RED_BTN, GREEN_BTN, YELLOW_BTN, BLUE_BTN };
 int currentRound = 0;
+int ledsAnswered = 0;
 
 enum States {
   READY_FOR_NEXT_ROUND,
@@ -77,7 +78,7 @@ void triggerBtnAndLed(int btnPin, int ledPin) {
 
 int blink(int ledPin) {
   digitalWrite(ledPin, HIGH);
-  delay(500);
+  delay(1000);
   digitalWrite(ledPin, LOW);
   delay(500);
   return ledPin;
@@ -103,10 +104,14 @@ void blinkLedsForCurrentRound() {
 }
 
 int currentGameState() {
-  // Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on 
+  // Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on
   // the level of difficulty as well.
-  if (currentRound < LED_SEQUENCE_SIZE) {
-    return READY_FOR_NEXT_ROUND;    
+  if (currentRound <= LED_SEQUENCE_SIZE) {
+    if (ledsAnswered == currentRound) {
+      return READY_FOR_NEXT_ROUND;
+    } else {
+      return USER_IS_PLAYING;
+    }
   } else {
     return VICTORY;
   }
@@ -114,7 +119,20 @@ int currentGameState() {
 
 void prepareNextRound() {
   currentRound++;
-  blinkLedsForCurrentRound();
+  /* 
+    ledsAnswered needs to be reset in every round to count how many
+    leds the user answered in a given round. 
+    For example, if 3 out of 4 were answered then it's game over.
+  */
+  ledsAnswered = 0;
+
+  if (currentRound < LED_SEQUENCE_SIZE) {
+    blinkLedsForCurrentRound();
+  }
+}
+
+void processUserInput() {
+  ledsAnswered++;
 }
 
 void switchBetweenGameStates() {
@@ -126,6 +144,7 @@ void switchBetweenGameStates() {
       break;
     case USER_IS_PLAYING:
       Serial.println("The user is playing");
+      processUserInput();
       break;
     case VICTORY:
       Serial.println("Hurray! You won the game!");
@@ -134,12 +153,10 @@ void switchBetweenGameStates() {
       Serial.println("Game over");
       break;
   }
-  delay(500); // just for Serial printing the state values to check if it works in the loop()
+  delay(500);  // just for Serial printing the state values to check if it works in the loop()
 }
 
 void loop() {
   switchBetweenGameStates();
-
-  // while (1) {}  // quick hack to stop the above from repeating after it finishes
   // Serial.println(verifyUserInput());
 }
