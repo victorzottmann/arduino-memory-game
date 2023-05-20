@@ -1,23 +1,23 @@
-// pins
-#define RED_BTN 11
-#define GREEN_BTN 10
-#define YELLOW_BTN 9
-#define BLUE_BTN 8
-#define RED_LED 5
-#define GREEN_LED 4
-#define YELLOW_LED 3
-#define BLUE_LED 2
-#define POT A0
+const int redBtn = 11;
+const int greenBtn = 10;
+const int yellowBtn = 9;
+const int blueBtn = 8;
+
+const int redLed = 5;
+const int greenLed = 4;
+const int yellowLed = 3;
+const int blueLed = 2;
+const int pot = 0;
 
 // other constants
-#define LED_SEQUENCE_SIZE 4
-#define ALL_ROUNDS_COMPLETED 5
-#define ALL_ROUNDS_NOT_COMPLETED 6
-#define UNDEFINED -1
+const int ledSequenceSize = 4;
+const int allRoundsCompleted = 5;
+const int allRoundsNotCompleted = 6;
+const int undefined = -1;
 
 // global variables
-int ledPins[LED_SEQUENCE_SIZE];
-int btnPins[] = { RED_BTN, GREEN_BTN, YELLOW_BTN, BLUE_BTN };
+int ledPins[ledSequenceSize];
+int btnPins[] = { redBtn, greenBtn, yellowBtn, blueBtn };
 int currentRound = 0;
 int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
@@ -33,19 +33,18 @@ enum States {
 
 void setup() {
   Serial.begin(9600);
+
+  pinMode(redBtn, INPUT);
+  pinMode(greenBtn, INPUT);
+  pinMode(yellowBtn, INPUT);
+  pinMode(blueBtn, INPUT);
+
+  pinMode(redLed, OUTPUT);
+  pinMode(greenLed, OUTPUT);
+  pinMode(yellowLed, OUTPUT);
+  pinMode(blueLed, OUTPUT);
+
   startGame();
-  setPins();
-}
-
-void setPins() {
-  for (int i = 0; i < sizeof(btnPins); i++) {
-    pinMode(btnPins[i], INPUT_PULLUP);  // set all the Button pins to INPUT_PULLUP mode
-  }
-
-  for (int i = 0; i < sizeof(ledPins); i++) {
-    pinMode(ledPins[i], OUTPUT);    // set all the LED pins to OUTPUT mode
-    digitalWrite(ledPins[i], LOW);  // set all the LED pins to LOW when the program starts
-  }
 }
 
 int randomLedPicker() {
@@ -54,7 +53,7 @@ int randomLedPicker() {
     I'm using the LED constants instead of numbers to make sure that
     the randomisation happens for the LEDs themselves in case I change their pins.
   */
-  return random(BLUE_LED, RED_LED + 1);
+  return random(blueLed, redLed + 1);
 }
 
 void startGame() {
@@ -67,35 +66,42 @@ void startGame() {
     would actually always be the same. 
     In other words, randomSeed() feeds into random() with a random number 
   */
-  int potLevel = analogRead(POT);
+  int potLevel = analogRead(pot);
   randomSeed(potLevel);
 
-  for (int i = 0; i < LED_SEQUENCE_SIZE; i++) {
+  for (int i = 0; i < ledSequenceSize; i++) {
     ledPins[i] = randomLedPicker();
-    // Serial.println(ledPins[i]);
+    Serial.print(ledPins[i]);
+    Serial.print(" ");
   }
-  // Serial.println();
+  Serial.println("Game started");
 }
 
 int blink(int ledPin) {
   digitalWrite(ledPin, HIGH);
-  delay(500);
+  delay(300);
   digitalWrite(ledPin, LOW);
-  delay(500);
+  delay(300);
   return ledPin;
 }
 
 int verifyUserInput() {
-  if (digitalRead(RED_BTN) == LOW) return blink(RED_LED);        // return the number associated with RED_LED when it blinks
-  if (digitalRead(GREEN_BTN) == LOW) return blink(GREEN_LED);    // return the number associated with GREEN_LED when it blinks
-  if (digitalRead(YELLOW_BTN) == LOW) return blink(YELLOW_LED);  // return the number associated with YELLOW_LED when it blinks
-  if (digitalRead(BLUE_BTN) == LOW) return blink(BLUE_LED);      // return the number associated with BLUE_LED when it blinks
-  return UNDEFINED;                                              // return a number outside the available pin range
+  bool redBtnIsClicked = digitalRead(redBtn) == HIGH;
+  bool greenBtnIsClicked = digitalRead(greenBtn) == HIGH;
+  bool yellowBtnIsClicked = digitalRead(yellowBtn) == HIGH;
+  bool blueBtnIsClicked = digitalRead(blueBtn) == HIGH;
+
+  if (redBtnIsClicked) return blink(redLed);        // return the number associated with redLed when it blinks
+  if (greenBtnIsClicked) return blink(greenLed);    // return the number associated with greenLed when it blinks
+  if (yellowBtnIsClicked) return blink(yellowLed);  // return the number associated with yellowLed when it blinks
+  if (blueBtnIsClicked) return blink(blueLed);      // return the number associated with blueLed when it blinks
+
+  return undefined;  // return a number outside the available pin range
 }
 
 void blinkLedsForCurrentRound() {
   /* 
-    Changed from LED_SEQUENCE_SIZE to check if the blink sequence would adapt accordingly.
+    Changed from ledSequenceSize to check if the blink sequence would adapt accordingly.
     For example, if in round 1, blink once; if in round 2, blink twice, and so on.
     Remember not to leave it this way as it was just for testing
   */
@@ -106,17 +112,17 @@ void blinkLedsForCurrentRound() {
 
 int currentGameState() {
   /*
-    Leave it like this for now. Need to think about how to change the LED_SEQUENCE_SIZE based on
+    Leave it like this for now. Need to think about how to change the ledSequenceSize based on
     the level of difficulty as well.
     This also looks very ugly even though it works. Figure out a way to simplify it.
   */
-  if (currentRound <= LED_SEQUENCE_SIZE) {
+  if (currentRound <= ledSequenceSize) {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
     } else {
       return WAITING_FOR_USER_INPUT;
     }
-  } else if (currentRound == ALL_ROUNDS_COMPLETED) {
+  } else if (currentRound == allRoundsCompleted) {
     return VICTORY;
   } else {
     return GAME_OVER;
@@ -128,24 +134,27 @@ void prepareNextRound() {
   /* 
     ledsAnswered needs to be reset in every round to count how many
     leds the user answered in a given round. 
-    For example, if 3 out of 4 were answered then it's game over.
+    For example, if only 3 correct out of 4 were answered then it's game over.
   */
   ledsAnswered = 0;
   currentRound++;
-  if (currentRound <= LED_SEQUENCE_SIZE) {
+  if (currentRound <= ledSequenceSize) {
     blinkLedsForCurrentRound();
   }
+
+  Serial.print("Round ");
+  Serial.print(currentRound);
 }
 
 void processUserInput() {
   int answer = verifyUserInput();
 
-  if (answer == UNDEFINED) {
+  if (answer == undefined) {
     return;
   }
 
-  Serial.println(ledsAnswered); // first
-  Serial.println(ledPins[ledsAnswered]); // second
+  // Serial.println(ledsAnswered); // first
+  // Serial.println(ledPins[ledsAnswered]); // second
   // Serial.println(currentRound);
 
   /* 
@@ -165,42 +174,42 @@ void processUserInput() {
     ledsAnswered++;
   } else {
     // Serial.println("Wrong answer!");
-    currentRound = ALL_ROUNDS_NOT_COMPLETED;
+    currentRound = allRoundsNotCompleted;
   }
 }
 
 void victoryBlinkSequence() {
   while (gameOverVictoryCount < 3) {
-    digitalWrite(RED_LED, HIGH);
+    digitalWrite(redLed, HIGH);
     delay(100);
-    digitalWrite(GREEN_LED, HIGH);
+    digitalWrite(greenLed, HIGH);
     delay(100);
-    digitalWrite(YELLOW_LED, HIGH);
+    digitalWrite(yellowLed, HIGH);
     delay(100);
-    digitalWrite(BLUE_LED, HIGH);
+    digitalWrite(blueLed, HIGH);
     delay(100);
-    digitalWrite(RED_LED, LOW);
+    digitalWrite(redLed, LOW);
     delay(100);
-    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(greenLed, LOW);
     delay(100);
-    digitalWrite(YELLOW_LED, LOW);
+    digitalWrite(yellowLed, LOW);
     delay(100);
-    digitalWrite(BLUE_LED, LOW);
+    digitalWrite(blueLed, LOW);
     gameOverVictoryCount++;
   }
 }
 
 void gameOverBlinkSequence() {
   while (gameOverCount < 3) {
-    digitalWrite(RED_LED, HIGH);
-    digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(YELLOW_LED, HIGH);
-    digitalWrite(BLUE_LED, HIGH);
+    digitalWrite(redLed, HIGH);
+    digitalWrite(greenLed, HIGH);
+    digitalWrite(yellowLed, HIGH);
+    digitalWrite(blueLed, HIGH);
     delay(500);
-    digitalWrite(RED_LED, LOW);
-    digitalWrite(GREEN_LED, LOW);
-    digitalWrite(YELLOW_LED, LOW);
-    digitalWrite(BLUE_LED, LOW);
+    digitalWrite(redLed, LOW);
+    digitalWrite(greenLed, LOW);
+    digitalWrite(yellowLed, LOW);
+    digitalWrite(blueLed, LOW);
     delay(500);
     gameOverCount++;
   }
