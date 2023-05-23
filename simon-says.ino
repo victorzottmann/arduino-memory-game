@@ -1,21 +1,36 @@
-const int redBtn = 11;
-const int greenBtn = 10;
-const int yellowBtn = 9;
-const int blueBtn = 8;
+#include <LiquidCrystal.h>
 
-const int redLed = 5;
-const int greenLed = 4;
-const int yellowLed = 3;
-const int blueLed = 2;
-const int pot = 0;
+// LCD pins
+const int rs = 13;  // lcd register select to digital pin 13
+const int en = 12;  // lcd enable to digital pin 12
+const int d4 = 11;  // lcd d4 to digital pin 11
+const int d5 = 10;  // lcd d5 to digital pin 10
+const int d6 = 9;   // lcd d6 to digital pin 9
+const int d7 = 8;   // lcd d7 to digital pin 8
 
-// other constants
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+// LED pins and extra potentiometer for random LED sequence values
+const int redLed = 5;     // digital pin 5
+const int greenLed = 4;   // digital pin 4
+const int yellowLed = 3;  // digital pin 3
+const int blueLed = 2;    // digital pin 2
+const int pot = 0;        // analog pin A0
+
+// Button pins
+const int redBtn = 24;     // digital pin 24
+const int greenBtn = 25;   // digital pin 25
+const int yellowBtn = 26;  // digital pin 26
+const int blueBtn = 27;    // digital pin 27
+const int startBtn = 28;   // digital pin 28
+
+// Other constants
 const int ledSequenceSize = 4;
 const int allRoundsCompleted = 5;
 const int allRoundsNotCompleted = 6;
 const int undefined = -1;
 
-// global variables
+// Global variables
 int ledPins[ledSequenceSize];
 int btnPins[] = { redBtn, greenBtn, yellowBtn, blueBtn };
 int currentRound = 0;
@@ -23,7 +38,7 @@ int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
 int gameOverCount = 0;
 
-// game states
+// Game states
 enum States {
   READY_FOR_NEXT_ROUND,
   WAITING_FOR_USER_INPUT,
@@ -33,6 +48,7 @@ enum States {
 
 void setup() {
   Serial.begin(9600);
+  lcd.begin(16, 2);
 
   pinMode(redBtn, INPUT);
   pinMode(greenBtn, INPUT);
@@ -69,12 +85,13 @@ void startGame() {
   int potLevel = analogRead(pot);
   randomSeed(potLevel);
 
+  Serial.println("Game started");
+  Serial.print("LED sequence: ");
   for (int i = 0; i < ledSequenceSize; i++) {
     ledPins[i] = randomLedPicker();
     Serial.print(ledPins[i]);
     Serial.print(" ");
   }
-  Serial.println("Game started");
 }
 
 int blink(int ledPin) {
@@ -138,12 +155,15 @@ void prepareNextRound() {
   */
   ledsAnswered = 0;
   currentRound++;
+
+  lcd.setCursor(0, 0);
+  lcd.print("Round ");
+  lcd.print(currentRound);
+  
+  delay(1000);
   if (currentRound <= ledSequenceSize) {
     blinkLedsForCurrentRound();
   }
-
-  Serial.print("Round ");
-  Serial.print(currentRound);
 }
 
 void processUserInput() {
@@ -152,10 +172,6 @@ void processUserInput() {
   if (answer == undefined) {
     return;
   }
-
-  // Serial.println(ledsAnswered); // first
-  // Serial.println(ledPins[ledsAnswered]); // second
-  // Serial.println(currentRound);
 
   /* 
     currentRound = 1
@@ -173,12 +189,16 @@ void processUserInput() {
   if (answer == ledPins[ledsAnswered]) {
     ledsAnswered++;
   } else {
-    // Serial.println("Wrong answer!");
     currentRound = allRoundsNotCompleted;
   }
 }
 
 void victoryBlinkSequence() {
+  lcd.setCursor(0, 0);
+  lcd.print("Hurray!");
+  lcd.setCursor(1, 0);
+  lcd.print("You won!!!");
+
   while (gameOverVictoryCount < 3) {
     digitalWrite(redLed, HIGH);
     delay(100);
@@ -200,7 +220,10 @@ void victoryBlinkSequence() {
 }
 
 void gameOverBlinkSequence() {
-  while (gameOverCount < 3) {
+  lcd.setCursor(0, 0);
+  lcd.print("Game over");
+
+  while (gameOverCount < 5) {
     digitalWrite(redLed, HIGH);
     digitalWrite(greenLed, HIGH);
     digitalWrite(yellowLed, HIGH);
@@ -227,11 +250,9 @@ void switchBetweenGameStates() {
       processUserInput();
       break;
     case VICTORY:
-      // Serial.println("Hurray! You won the game!");
       victoryBlinkSequence();
       break;
     case GAME_OVER:
-      // Serial.println("Game over");
       gameOverBlinkSequence();
       break;
   }
