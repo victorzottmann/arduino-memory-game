@@ -37,6 +37,7 @@ int currentRound = 0;
 int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
 int gameOverCount = 0;
+bool restartGame = false;
 
 // Game states
 enum States {
@@ -156,6 +157,7 @@ void prepareNextRound() {
   ledsAnswered = 0;
   currentRound++;
 
+  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Round ");
   lcd.print(currentRound);
@@ -195,10 +197,8 @@ void processUserInput() {
 
 void victoryBlinkSequence() {
   lcd.setCursor(0, 0);
-  lcd.print("Hurray!");
-  lcd.setCursor(1, 0);
-  lcd.print("You won!!!");
-
+  lcd.print("You won!");
+  
   while (gameOverVictoryCount < 3) {
     digitalWrite(redLed, HIGH);
     delay(100);
@@ -217,6 +217,9 @@ void victoryBlinkSequence() {
     digitalWrite(blueLed, LOW);
     gameOverVictoryCount++;
   }
+
+  lcd.setCursor(0, 0);
+  lcd.print("Try again?");
 }
 
 void gameOverBlinkSequence() {
@@ -236,9 +239,34 @@ void gameOverBlinkSequence() {
     delay(500);
     gameOverCount++;
   }
+
+  lcd.setCursor(0, 1);
+  lcd.print("Try again?");
 }
 
-void switchBetweenGameStates() {
+void restart() {
+  currentRound = 0;
+  ledsAnswered = 0;
+  gameOverVictoryCount = 0;
+  gameOverCount = 0;
+  restartGame = false;
+
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Restarting game");
+  lcd.setCursor(0, 1);
+  lcd.print("...");
+  delay(1000);
+
+  startGame();
+}
+
+void switchBetweenGameStates(bool restartGame) {
+  if (restartGame) {
+    restart();
+    return;
+  }
+
   int state = currentGameState();
   switch (state) {
     case READY_FOR_NEXT_ROUND:
@@ -259,5 +287,8 @@ void switchBetweenGameStates() {
 }
 
 void loop() {
-  switchBetweenGameStates();
+  bool startBtnClicked = digitalRead(startBtn) == HIGH;
+  if (startBtnClicked) restartGame = true;
+
+  switchBetweenGameStates(restartGame);
 }
