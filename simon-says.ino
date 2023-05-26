@@ -61,7 +61,7 @@ void setup() {
   pinMode(yellowLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
 
-  startGame();
+  welcome();
 }
 
 String getLevel() {
