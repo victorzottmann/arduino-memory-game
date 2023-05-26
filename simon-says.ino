@@ -4,18 +4,19 @@
 rgb_lcd lcd;
 
 // LED pins and extra potentiometer for random LED sequence values
-const int redLed = 11;     // digital pin 11
-const int greenLed = 10;   // digital pin 10
-const int yellowLed = 9;   // digital pin 9
-const int blueLed = 8;     // digital pin 8
-const int pot = 0;         // analog pin A0
+const int redLed = 11;    // digital pin 11
+const int greenLed = 10;  // digital pin 10
+const int yellowLed = 9;  // digital pin 9
+const int blueLed = 8;    // digital pin 8
+const int pot = 0;        // analog pin A0
+const int unusedPin = 1;  // analog pin A1
 
 // Button pins
 const int redBtn = 6;     // digital pin 6
 const int greenBtn = 5;   // digital pin 5
 const int yellowBtn = 4;  // digital pin 4
 const int blueBtn = 3;    // digital pin 3
-const int startBtn = 2;   // digital pin 2
+const int whiteBtn = 2;   // digital pin 2
 
 // Other constants
 const int ledSequenceSize = 4;
@@ -30,10 +31,16 @@ int currentRound = 0;
 int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
 int gameOverCount = 0;
+int delayTime;
+int inputCount = 1;
 bool restartGame = false;
+bool levelAssigned = false;
+bool userIsPlaying = false;
+String level = "";
 
 // Game states
 enum States {
+  WELCOME,
   READY_FOR_NEXT_ROUND,
   WAITING_FOR_USER_INPUT,
   VICTORY,
@@ -57,6 +64,52 @@ void setup() {
   startGame();
 }
 
+String getLevel() {
+  int potValue = analogRead(pot);
+  int potMapped = map(potValue, 1023, 0, 0, 100);
+
+  if (potMapped >= 0 && potMapped <= 33) {
+    level = "Easy";
+    delayTime = 300;
+  } else if (potMapped > 33 && potMapped <= 66) {
+    level = "Medium";
+    delayTime = 200;
+  } else {
+    level = "Hard";
+    delayTime = 150;
+  }
+
+  return level;
+}
+
+void assignLevel() {
+  level = getLevel();
+
+  if (digitalRead(whiteBtn) == LOW && !levelAssigned) {
+    Serial.println();
+    Serial.print("Assigned level: ");
+    Serial.print(level);
+
+    levelAssigned = true;
+  }
+}
+
+void welcome() {
+  level = getLevel();
+
+  Serial.println();
+  Serial.print("Select level: ");
+  Serial.print(level);
+
+  while (!levelAssigned) {
+    assignLevel();
+
+    if (levelAssigned) {
+      startGame();
+    }
+  }
+}
+
 int randomLedPicker() {
   /*
     Random from 2 to 5 (if no +1, the range would go between 2 and 4)
@@ -67,6 +120,10 @@ int randomLedPicker() {
 }
 
 void startGame() {
+  if (!levelAssigned) {
+    return;
+  }
+
   /* 
     This truly generates a random number given the potentiometer value
     However, if you disconnect the potentiometer, the number will continue to be random because
@@ -76,9 +133,12 @@ void startGame() {
     would actually always be the same. 
     In other words, randomSeed() feeds into random() with a random number 
   */
-  int potLevel = analogRead(pot);
-  randomSeed(potLevel);
+  int randomValue = analogRead(unusedPin);
+  randomSeed(randomValue);
 
+  delay(1000);
+
+  Serial.println();
   Serial.println("Game started");
   Serial.print("LED sequence: ");
   for (int i = 0; i < ledSequenceSize; i++) {
@@ -90,75 +150,43 @@ void startGame() {
 
 int blink(int ledPin) {
   digitalWrite(ledPin, HIGH);
-  delay(300);
+  delay(delayTime);
   digitalWrite(ledPin, LOW);
-  delay(300);
+  delay(delayTime);
   return ledPin;
 }
 
 int verifyUserInput() {
-  bool redBtnIsClicked = digitalRead(redBtn) == HIGH;
-  bool greenBtnIsClicked = digitalRead(greenBtn) == HIGH;
-  bool yellowBtnIsClicked = digitalRead(yellowBtn) == HIGH;
-  bool blueBtnIsClicked = digitalRead(blueBtn) == HIGH;
+  bool redBtnIsPressed = digitalRead(redBtn) == LOW;
+  bool greenBtnIsPressed = digitalRead(greenBtn) == LOW;
+  bool yellowBtnIsPressed = digitalRead(yellowBtn) == LOW;
+  bool blueBtnIsPressed = digitalRead(blueBtn) == LOW;
 
-  if (redBtnIsClicked) return blink(redLed);        // return the number associated with redLed when it blinks
-  if (greenBtnIsClicked) return blink(greenLed);    // return the number associated with greenLed when it blinks
-  if (yellowBtnIsClicked) return blink(yellowLed);  // return the number associated with yellowLed when it blinks
-  if (blueBtnIsClicked) return blink(blueLed);      // return the number associated with blueLed when it blinks
-
-  return undefined;  // return a number outside the available pin range
-}
-
-void blinkLedsForCurrentRound() {
-  /* 
-    Changed from ledSequenceSize to check if the blink sequence would adapt accordingly.
-    For example, if in round 1, blink once; if in round 2, blink twice, and so on.
-    Remember not to leave it this way as it was just for testing
-  */
-  for (int i = 0; i < currentRound; i++) {
-    blink(ledPins[i]);
+  if (redBtnIsPressed) {
+    int result = blink(redLed);
+    while (digitalRead(redBtn) == LOW) {}
+    return result;  // return the number associated with redLed when it blinks (11)
   }
-}
 
-int currentGameState() {
-  /*
-    Leave it like this for now. Need to think about how to change the ledSequenceSize based on
-    the level of difficulty as well.
-    This also looks very ugly even though it works. Figure out a way to simplify it.
-  */
-  if (currentRound <= ledSequenceSize) {
-    if (ledsAnswered == currentRound) {
-      return READY_FOR_NEXT_ROUND;
-    } else {
-      return WAITING_FOR_USER_INPUT;
-    }
-  } else if (currentRound == allRoundsCompleted) {
-    return VICTORY;
-  } else {
-    return GAME_OVER;
+  if (greenBtnIsPressed) {
+    int result = blink(greenLed);
+    while (digitalRead(greenBtn) == LOW) {}
+    return result;  // return the number associated with greenLed when it blinks (10)
   }
-}
 
-void prepareNextRound() {
-  delay(800);
-  /* 
-    ledsAnswered needs to be reset in every round to count how many
-    leds the user answered in a given round. 
-    For example, if only 3 correct out of 4 were answered then it's game over.
-  */
-  ledsAnswered = 0;
-  currentRound++;
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Round ");
-  lcd.print(currentRound);
-  
-  delay(1000);
-  if (currentRound <= ledSequenceSize) {
-    blinkLedsForCurrentRound();
+  if (yellowBtnIsPressed) {
+    int result = blink(yellowLed);
+    while (digitalRead(yellowBtn) == LOW) {}
+    return result;  // return the number associated with yellowLed when it blinks (9)
   }
+
+  if (blueBtnIsPressed) {
+    int result = blink(blueLed);
+    while (digitalRead(blueBtn) == LOW) {}
+    return result;  // return the number associated with blueLed when it blinks (8)
+  }
+
+  return undefined;  // return a number outside the available pin range (-1)
 }
 
 void processUserInput() {
@@ -183,8 +211,79 @@ void processUserInput() {
   */
   if (answer == ledPins[ledsAnswered]) {
     ledsAnswered++;
+    inputCount++;
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Input ");
+
+    if (inputCount > currentRound) {
+      inputCount = currentRound;
+    }
+
+    lcd.print(inputCount);
+    lcd.print(" of ");
+    lcd.print(currentRound);
+    lcd.print(" V");
   } else {
     currentRound = allRoundsNotCompleted;
+  }
+}
+
+void blinkLedsForCurrentRound() {
+  /* 
+    Changed from ledSequenceSize to check if the blink sequence would adapt accordingly.
+    For example, if in round 1, blink once; if in round 2, blink twice, and so on.
+  */
+  for (int i = 0; i < currentRound; i++) {
+    blink(ledPins[i]);
+  }
+}
+
+int currentGameState() {
+  if (!levelAssigned) {
+    return WELCOME;
+  }
+
+  if (currentRound <= ledSequenceSize) {
+    if (ledsAnswered == currentRound) {
+      return READY_FOR_NEXT_ROUND;
+    } else {
+      return WAITING_FOR_USER_INPUT;
+    }
+  } else if (currentRound == allRoundsCompleted) {
+    return VICTORY;
+  } else {
+    return GAME_OVER;
+  }
+}
+
+void prepareNextRound() {
+  delay(800);
+  /* 
+    ledsAnswered needs to be reset in every round to count how many
+    leds the user answered in a given round. 
+    For example, if only 3 correct out of 4 were answered then it's game over.
+  */
+  ledsAnswered = 0;
+  currentRound++;
+
+  if (currentRound <= ledSequenceSize) {
+    lcd.clear();
+
+    lcd.setCursor(0, 0);
+    lcd.print("Round ");
+    lcd.print(currentRound);
+
+    lcd.setCursor(0, 1);
+    lcd.print("Inputs: ");
+    lcd.print(inputCount);
+    lcd.print(" of ");
+    lcd.print(currentRound);
+    lcd.print(" N");
+
+    delay(1000);
+
+    blinkLedsForCurrentRound();
   }
 }
 
@@ -192,7 +291,7 @@ void victoryBlinkSequence() {
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("You won!");
-  
+
   while (gameOverVictoryCount < 3) {
     digitalWrite(redLed, HIGH);
     delay(100);
@@ -245,15 +344,18 @@ void restart() {
   gameOverVictoryCount = 0;
   gameOverCount = 0;
   restartGame = false;
+  levelAssigned = false;
+  userIsPlaying = false;
 
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Restarting game");
+
   lcd.setCursor(0, 1);
   lcd.print("...");
-  delay(1000);
 
-  startGame();
+  delay(1000);
+  welcome();
 }
 
 void switchBetweenGameStates(bool restartGame) {
@@ -264,24 +366,33 @@ void switchBetweenGameStates(bool restartGame) {
 
   int state = currentGameState();
   switch (state) {
+    case WELCOME:
+      assignLevel();
+      userIsPlaying = false;
+      break;
     case READY_FOR_NEXT_ROUND:
-      prepareNextRound();
+      if (levelAssigned) {
+        prepareNextRound();
+      }
       break;
     case WAITING_FOR_USER_INPUT:
       processUserInput();
+      userIsPlaying = true;
       break;
     case VICTORY:
       victoryBlinkSequence();
+      userIsPlaying = true;
       break;
     case GAME_OVER:
       gameOverBlinkSequence();
+      userIsPlaying = true;
       break;
   }
 }
 
 void loop() {
-  bool startBtnClicked = digitalRead(startBtn) == HIGH;
-  if (startBtnClicked) restartGame = true;
+  bool whiteBtnClicked = digitalRead(whiteBtn) == LOW;
+  if (whiteBtnClicked && userIsPlaying) restartGame = true;
 
   switchBetweenGameStates(restartGame);
 }
