@@ -85,10 +85,14 @@ String getLevel() {
 void assignLevel() {
   level = getLevel();
 
-  if (digitalRead(whiteBtn) == LOW && !levelAssigned) {
-    Serial.println();
-    Serial.print("Assigned level: ");
-    Serial.print(level);
+  bool whiteBtnIsPressed = digitalRead(whiteBtn) == LOW;
+
+  if (whiteBtnIsPressed && !levelAssigned) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Assigned level: ");
+    lcd.setCursor(0, 1);
+    lcd.print(level);
 
     levelAssigned = true;
   }
@@ -97,9 +101,11 @@ void assignLevel() {
 void welcome() {
   level = getLevel();
 
-  Serial.println();
-  Serial.print("Select level: ");
-  Serial.print(level);
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("Select level: ");
+  lcd.setCursor(0, 1);
+  lcd.print(level);
 
   while (!levelAssigned) {
     assignLevel();
@@ -391,8 +397,8 @@ void switchBetweenGameStates(bool restartGame) {
 }
 
 void loop() {
-  bool whiteBtnClicked = digitalRead(whiteBtn) == LOW;
-  if (whiteBtnClicked && userIsPlaying) restartGame = true;
+  bool whiteBtnIsPressed = digitalRead(whiteBtn) == LOW;
+  if (whiteBtnIsPressed && userIsPlaying) restartGame = true;
 
   switchBetweenGameStates(restartGame);
 }
