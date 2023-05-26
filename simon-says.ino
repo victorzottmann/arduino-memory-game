@@ -1,28 +1,21 @@
-#include <LiquidCrystal.h>
+#include <Wire.h>
+#include "rgb_lcd.h"
 
-// LCD pins
-const int rs = 13;  // lcd register select to digital pin 13
-const int en = 12;  // lcd enable to digital pin 12
-const int d4 = 11;  // lcd d4 to digital pin 11
-const int d5 = 10;  // lcd d5 to digital pin 10
-const int d6 = 9;   // lcd d6 to digital pin 9
-const int d7 = 8;   // lcd d7 to digital pin 8
-
-LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+rgb_lcd lcd;
 
 // LED pins and extra potentiometer for random LED sequence values
-const int redLed = 5;     // digital pin 5
-const int greenLed = 4;   // digital pin 4
-const int yellowLed = 3;  // digital pin 3
-const int blueLed = 2;    // digital pin 2
-const int pot = 0;        // analog pin A0
+const int redLed = 11;     // digital pin 11
+const int greenLed = 10;   // digital pin 10
+const int yellowLed = 9;   // digital pin 9
+const int blueLed = 8;     // digital pin 8
+const int pot = 0;         // analog pin A0
 
 // Button pins
-const int redBtn = 24;     // digital pin 24
-const int greenBtn = 25;   // digital pin 25
-const int yellowBtn = 26;  // digital pin 26
-const int blueBtn = 27;    // digital pin 27
-const int startBtn = 28;   // digital pin 28
+const int redBtn = 6;     // digital pin 6
+const int greenBtn = 5;   // digital pin 5
+const int yellowBtn = 4;  // digital pin 4
+const int blueBtn = 3;    // digital pin 3
+const int startBtn = 2;   // digital pin 2
 
 // Other constants
 const int ledSequenceSize = 4;
@@ -196,6 +189,7 @@ void processUserInput() {
 }
 
 void victoryBlinkSequence() {
+  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("You won!");
   
@@ -223,6 +217,7 @@ void victoryBlinkSequence() {
 }
 
 void gameOverBlinkSequence() {
+  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Game over");
 
@@ -270,11 +265,9 @@ void switchBetweenGameStates(bool restartGame) {
   int state = currentGameState();
   switch (state) {
     case READY_FOR_NEXT_ROUND:
-      // Serial.println("Ready for the next round");
       prepareNextRound();
       break;
     case WAITING_FOR_USER_INPUT:
-      // Serial.println("Waiting for user input");
       processUserInput();
       break;
     case VICTORY:
