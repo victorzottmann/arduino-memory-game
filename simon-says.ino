@@ -34,17 +34,16 @@ int ledsAnswered = 0;
 int gameOverVictoryCount = 0;
 int gameOverCount = 0;
 int delayTime;
-int inputCount = 1;
+bool gameInMenu = true;
 bool restartGame = false;
 bool levelAssigned = false;
 bool levelSelected = false;
 bool userIsPlaying = false;
-bool userInWelcome = true;
+bool tryAgainDisplayed = false;
 String level = "";
 
 // Game states
 enum States {
-  WELCOME,
   READY_FOR_NEXT_ROUND,
   WAITING_FOR_USER_INPUT,
   VICTORY,
@@ -85,17 +84,16 @@ String getLevel() {
 }
 
 void assignLevel() {
-  level = getLevel();
-
   bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
 
   if (whiteBtnIsPressed && !levelAssigned) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Assigned level: ");
-    lcd.setCursor(0, 1);
-    lcd.print(level);
-
+    for (int i = 3; i > 0; i--) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("Starting in ");
+      lcd.print(i);
+      delay(1000);
+    }
     levelAssigned = true;
   }
 }
@@ -110,10 +108,6 @@ int randomLedPicker() {
 }
 
 void startGame() {
-  if (!levelAssigned) {
-    return;
-  }
-
   /* 
     This truly generates a random number given the potentiometer value
     However, if you disconnect the potentiometer, the number will continue to be random because
@@ -123,10 +117,8 @@ void startGame() {
     would actually always be the same. 
     In other words, randomSeed() feeds into random() with a random number 
   */
-  int randomValue = analogRead(unusedPin);
+  int randomValue = analogRead(pot);
   randomSeed(randomValue);
-
-  delay(1000);
 
   Serial.println();
   Serial.println("Game started");
@@ -201,7 +193,6 @@ void processUserInput() {
   */
   if (answer == ledPins[ledsAnswered]) {
     ledsAnswered++;
-    inputCount++;
   } else {
     currentRound = allRoundsNotCompleted;
   }
@@ -218,10 +209,6 @@ void blinkLedsForCurrentRound() {
 }
 
 int currentGameState() {
-  // if (!levelAssigned) {
-  //   return WELCOME;
-  // }
-
   if (currentRound <= ledSequenceSize) {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
@@ -259,6 +246,12 @@ void prepareNextRound() {
 }
 
 void victoryBlinkSequence() {
+  /* 
+    If "Try again?" has already been displayed, do nothing.
+    This solves a strange flickering problem in the LCD.
+  */
+  if (tryAgainDisplayed) return; // if "Try again?" has already been displayed, do nothing
+  
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("You won!");
@@ -284,9 +277,13 @@ void victoryBlinkSequence() {
 
   lcd.setCursor(0, 1);
   lcd.print("Try again?");
+
+  tryAgainDisplayed = true; // stating that "Try again?" has been displayed
 }
 
 void gameOverBlinkSequence() {
+  if (tryAgainDisplayed) return; 
+
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Game over");
@@ -307,6 +304,8 @@ void gameOverBlinkSequence() {
 
   lcd.setCursor(0, 1);
   lcd.print("Try again?");
+
+  tryAgainDisplayed = true;
 }
 
 void restart() {
@@ -318,31 +317,23 @@ void restart() {
   levelAssigned = false;
   levelSelected = false;
   userIsPlaying = false;
-  userInWelcome = true;
+  gameInMenu = true;
 
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Restarting game");
-
   lcd.setCursor(0, 1);
   lcd.print("...");
 
-  delay(1000);
+  delay(1200);
   lcd.clear();
 }
 
-void switchBetweenGameStates(bool restartGame) {
-  if (restartGame) {
-    restart();
-    return;
-  }
+void switchBetweenGameStates() {
+  if (restartGame) restart();
 
   int state = currentGameState();
   switch (state) {
-    case WELCOME:
-      assignLevel();
-      userIsPlaying = false;
-      break;
     case READY_FOR_NEXT_ROUND:
       if (levelAssigned) {
         prepareNextRound();
@@ -364,6 +355,8 @@ void switchBetweenGameStates(bool restartGame) {
 }
 
 void displayLevelOptions(String level) {
+  lcd.setCursor(0, 0);
+  lcd.print("Select level:  ");
   lcd.setCursor(0, 1);
   lcd.print("      ");
   lcd.setCursor(0, 1);
@@ -372,26 +365,26 @@ void displayLevelOptions(String level) {
 
 void loop() {
   bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
-  if (whiteBtnIsPressed && userIsPlaying) restartGame = true;
+
+  if (whiteBtnIsPressed && userIsPlaying) {
+    restartGame = true;
+  }
 
   level = getLevel();
 
   if (!levelSelected) {
-    lcd.setCursor(0, 0);
-    lcd.print("Select level:");
     displayLevelOptions(level);
   }
-  
+
   if (!levelAssigned) {
     assignLevel();
-  
+
     if (levelAssigned) {
       startGame();
       levelSelected = true;
-      userInWelcome = false;
+      gameInMenu = false;
     }
   }
 
-  switchBetweenGameStates(restartGame);
+  switchBetweenGameStates();
 }
-
