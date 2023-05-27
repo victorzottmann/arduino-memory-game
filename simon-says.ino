@@ -108,6 +108,13 @@ void welcome() {
   Serial.print("User In Welcome: ");
   Serial.print(userInWelcome);
 
+  level = getLevel();
+
+  lcd.setCursor(0, 0);
+  lcd.print("Select level:");
+  lcd.setCursor(0, 1);
+  lcd.print(level);
+
   while (!levelAssigned) {
     assignLevel();
 
@@ -386,15 +393,6 @@ void displayLevelOptions(String level) {
 }
 
 void loop() {
-  if (!levelAssigned) {
-    lcd.setCursor(0, 0);
-    lcd.print("Select level:");
-
-    level = getLevel();
-
-    displayLevelOptions(level);
-  }
-
   bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
   if (whiteBtnIsPressed && userIsPlaying) restartGame = true;
 
