@@ -3,20 +3,22 @@
 
 rgb_lcd lcd;
 
-// LED pins and extra potentiometer for random LED sequence values
-const int redLed = 11;    // digital pin 11
-const int greenLed = 10;  // digital pin 10
-const int yellowLed = 9;  // digital pin 9
-const int blueLed = 8;    // digital pin 8
+// Button pins
+const int redBtn = 12;     // digital pin 12
+const int greenBtn = 11;   // digital pin 11
+const int yellowBtn = 10;  // digital pin 10
+const int blueBtn = 9;     // digital pin 9
+const int whiteBtn = 8;    // digital pin 8
+
+// LED pins
+const int redLed = 5;     // digital pin 5
+const int greenLed = 4;   // digital pin 4
+const int yellowLed = 3;  // digital pin 3
+const int blueLed = 2;    // digital pin 2
+
+// Analog pins
 const int pot = 0;        // analog pin A0
 const int unusedPin = 1;  // analog pin A1
-
-// Button pins
-const int redBtn = 6;     // digital pin 6
-const int greenBtn = 5;   // digital pin 5
-const int yellowBtn = 4;  // digital pin 4
-const int blueBtn = 3;    // digital pin 3
-const int whiteBtn = 2;   // digital pin 2
 
 // Other constants
 const int ledSequenceSize = 4;
@@ -36,6 +38,7 @@ int inputCount = 1;
 bool restartGame = false;
 bool levelAssigned = false;
 bool userIsPlaying = false;
+bool userInWelcome = false;
 String level = "";
 
 // Game states
@@ -85,7 +88,7 @@ String getLevel() {
 void assignLevel() {
   level = getLevel();
 
-  bool whiteBtnIsPressed = digitalRead(whiteBtn) == LOW;
+  bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
 
   if (whiteBtnIsPressed && !levelAssigned) {
     lcd.clear();
@@ -99,13 +102,11 @@ void assignLevel() {
 }
 
 void welcome() {
-  level = getLevel();
+  userInWelcome = true;
 
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Select level: ");
-  lcd.setCursor(0, 1);
-  lcd.print(level);
+  Serial.println();
+  Serial.print("User In Welcome: ");
+  Serial.print(userInWelcome);
 
   while (!levelAssigned) {
     assignLevel();
@@ -163,32 +164,32 @@ int blink(int ledPin) {
 }
 
 int verifyUserInput() {
-  bool redBtnIsPressed = digitalRead(redBtn) == LOW;
-  bool greenBtnIsPressed = digitalRead(greenBtn) == LOW;
-  bool yellowBtnIsPressed = digitalRead(yellowBtn) == LOW;
-  bool blueBtnIsPressed = digitalRead(blueBtn) == LOW;
+  bool redBtnIsPressed = digitalRead(redBtn) == HIGH;
+  bool greenBtnIsPressed = digitalRead(greenBtn) == HIGH;
+  bool yellowBtnIsPressed = digitalRead(yellowBtn) == HIGH;
+  bool blueBtnIsPressed = digitalRead(blueBtn) == HIGH;
 
   if (redBtnIsPressed) {
     int result = blink(redLed);
-    while (digitalRead(redBtn) == LOW) {}
+    while (digitalRead(redBtn) == HIGH) {}
     return result;  // return the number associated with redLed when it blinks (11)
   }
 
   if (greenBtnIsPressed) {
     int result = blink(greenLed);
-    while (digitalRead(greenBtn) == LOW) {}
+    while (digitalRead(greenBtn) == HIGH) {}
     return result;  // return the number associated with greenLed when it blinks (10)
   }
 
   if (yellowBtnIsPressed) {
     int result = blink(yellowLed);
-    while (digitalRead(yellowBtn) == LOW) {}
+    while (digitalRead(yellowBtn) == HIGH) {}
     return result;  // return the number associated with yellowLed when it blinks (9)
   }
 
   if (blueBtnIsPressed) {
     int result = blink(blueLed);
-    while (digitalRead(blueBtn) == LOW) {}
+    while (digitalRead(blueBtn) == HIGH) {}
     return result;  // return the number associated with blueLed when it blinks (8)
   }
 
@@ -218,18 +219,6 @@ void processUserInput() {
   if (answer == ledPins[ledsAnswered]) {
     ledsAnswered++;
     inputCount++;
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Input ");
-
-    if (inputCount > currentRound) {
-      inputCount = currentRound;
-    }
-
-    lcd.print(inputCount);
-    lcd.print(" of ");
-    lcd.print(currentRound);
-    lcd.print(" V");
   } else {
     currentRound = allRoundsNotCompleted;
   }
@@ -280,13 +269,6 @@ void prepareNextRound() {
     lcd.print("Round ");
     lcd.print(currentRound);
 
-    lcd.setCursor(0, 1);
-    lcd.print("Inputs: ");
-    lcd.print(inputCount);
-    lcd.print(" of ");
-    lcd.print(currentRound);
-    lcd.print(" N");
-
     delay(1000);
 
     blinkLedsForCurrentRound();
@@ -317,7 +299,7 @@ void victoryBlinkSequence() {
     gameOverVictoryCount++;
   }
 
-  lcd.setCursor(0, 0);
+  lcd.setCursor(0, 1);
   lcd.print("Try again?");
 }
 
@@ -396,8 +378,24 @@ void switchBetweenGameStates(bool restartGame) {
   }
 }
 
+void displayLevelOptions(String level) {
+  lcd.setCursor(0, 1);
+  lcd.print("      ");
+  lcd.setCursor(0, 1);
+  lcd.print(level);
+}
+
 void loop() {
-  bool whiteBtnIsPressed = digitalRead(whiteBtn) == LOW;
+  if (!levelAssigned) {
+    lcd.setCursor(0, 0);
+    lcd.print("Select level:");
+
+    level = getLevel();
+
+    displayLevelOptions(level);
+  }
+
+  bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
   if (whiteBtnIsPressed && userIsPlaying) restartGame = true;
 
   switchBetweenGameStates(restartGame);
