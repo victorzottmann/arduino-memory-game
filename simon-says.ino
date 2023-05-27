@@ -39,7 +39,7 @@ bool restartGame = false;
 bool levelAssigned = false;
 bool levelSelected = false;
 bool userIsPlaying = false;
-bool userInWelcome = false;
+bool userInWelcome = true;
 String level = "";
 
 // Game states
@@ -64,8 +64,6 @@ void setup() {
   pinMode(greenLed, OUTPUT);
   pinMode(yellowLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
-
-  // welcome();
 }
 
 String getLevel() {
@@ -99,26 +97,6 @@ void assignLevel() {
     lcd.print(level);
 
     levelAssigned = true;
-  }
-}
-
-void welcome() {
-  userInWelcome = true;
-
-  Serial.println();
-  Serial.print("User In Welcome: ");
-  Serial.print(userInWelcome);
-
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Select level:");
-  
-  while (!levelAssigned) {
-    assignLevel();
-
-    if (levelAssigned) {
-      startGame();
-    }
   }
 }
 
@@ -240,9 +218,9 @@ void blinkLedsForCurrentRound() {
 }
 
 int currentGameState() {
-  if (!levelAssigned) {
-    return WELCOME;
-  }
+  // if (!levelAssigned) {
+  //   return WELCOME;
+  // }
 
   if (currentRound <= ledSequenceSize) {
     if (ledsAnswered == currentRound) {
@@ -340,6 +318,7 @@ void restart() {
   levelAssigned = false;
   levelSelected = false;
   userIsPlaying = false;
+  userInWelcome = true;
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -349,7 +328,7 @@ void restart() {
   lcd.print("...");
 
   delay(1000);
-  welcome();
+  lcd.clear();
 }
 
 void switchBetweenGameStates(bool restartGame) {
@@ -409,6 +388,7 @@ void loop() {
     if (levelAssigned) {
       startGame();
       levelSelected = true;
+      userInWelcome = false;
     }
   }
 
