@@ -21,9 +21,9 @@ const int pot = 0;        // analog pin A0
 const int unusedPin = 1;  // analog pin A1
 
 // Other constants
-const int ledSequenceSize = 4;
-const int allRoundsCompleted = 5;
-const int allRoundsNotCompleted = 6;
+const int ledSequenceSize = 8;
+const int allRoundsCompleted = ledSequenceSize + 1;
+const int allRoundsNotCompleted = ledSequenceSize + 2;
 const int undefined = -1;
 
 // Global variables
@@ -99,12 +99,7 @@ void assignLevel() {
 }
 
 int randomLedPicker() {
-  /*
-    Random from 2 to 5 (if no +1, the range would go between 2 and 4)
-    I'm using the LED constants instead of numbers to make sure that
-    the randomisation happens for the LEDs themselves in case I change their pins.
-  */
-  return random(blueLed, redLed + 1);
+  return random(blueLed, redLed + 1); // range from 2 to 5 (6 is not included)
 }
 
 void startGame() {
@@ -123,6 +118,7 @@ void startGame() {
   Serial.println();
   Serial.println("Game started");
   Serial.print("LED sequence: ");
+
   for (int i = 0; i < ledSequenceSize; i++) {
     ledPins[i] = randomLedPicker();
     Serial.print(ledPins[i]);
