@@ -37,6 +37,7 @@ int delayTime;
 int inputCount = 1;
 bool restartGame = false;
 bool levelAssigned = false;
+bool levelSelected = false;
 bool userIsPlaying = false;
 bool userInWelcome = false;
 String level = "";
@@ -64,7 +65,7 @@ void setup() {
   pinMode(yellowLed, OUTPUT);
   pinMode(blueLed, OUTPUT);
 
-  welcome();
+  // welcome();
 }
 
 String getLevel() {
@@ -108,13 +109,10 @@ void welcome() {
   Serial.print("User In Welcome: ");
   Serial.print(userInWelcome);
 
-  level = getLevel();
-
+  lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("Select level:");
-  lcd.setCursor(0, 1);
-  lcd.print(level);
-
+  
   while (!levelAssigned) {
     assignLevel();
 
@@ -340,6 +338,7 @@ void restart() {
   gameOverCount = 0;
   restartGame = false;
   levelAssigned = false;
+  levelSelected = false;
   userIsPlaying = false;
 
   lcd.clear();
@@ -396,5 +395,23 @@ void loop() {
   bool whiteBtnIsPressed = digitalRead(whiteBtn) == HIGH;
   if (whiteBtnIsPressed && userIsPlaying) restartGame = true;
 
+  level = getLevel();
+
+  if (!levelSelected) {
+    lcd.setCursor(0, 0);
+    lcd.print("Select level:");
+    displayLevelOptions(level);
+  }
+  
+  if (!levelAssigned) {
+    assignLevel();
+  
+    if (levelAssigned) {
+      startGame();
+      levelSelected = true;
+    }
+  }
+
   switchBetweenGameStates(restartGame);
 }
+
