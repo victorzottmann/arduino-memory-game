@@ -17,13 +17,13 @@ const int yellowLed = 3;  // digital pin 3
 const int blueLed = 2;    // digital pin 2
 
 // Analog pins
-const int pot = 0;        // analog pin A0
+const int pot = 0;        // analog pin A0`
 const int unusedPin = 1;  // analog pin A1
 
 // Other constants
 const int ledSequenceSize = 8;
-const int allRoundsCompleted = ledSequenceSize + 1;
-const int allRoundsNotCompleted = ledSequenceSize + 2;
+const int allRoundsCompleted = ledSequenceSize;
+const int allRoundsNotCompleted = 10;
 const int undefined = -1;
 
 // Global variables
@@ -205,18 +205,19 @@ void blinkLedsForCurrentRound() {
 }
 
 int currentGameState() {
-  if (currentRound <= ledSequenceSize) {
+  if (currentRound < ledSequenceSize) {
     if (ledsAnswered == currentRound) {
       return READY_FOR_NEXT_ROUND;
     } else {
       return WAITING_FOR_USER_INPUT;
     }
-  } else if (currentRound == allRoundsCompleted) {
+  } else if (currentRound == ledSequenceSize) {
     return VICTORY;
   } else {
     return GAME_OVER;
   }
 }
+
 
 void prepareNextRound() {
   delay(800);
