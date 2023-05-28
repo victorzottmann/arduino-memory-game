@@ -21,9 +21,9 @@ const int pot = 0;        // analog pin A0
 const int unusedPin = 1;  // analog pin A1
 
 // Other constants
-const int ledSequenceSize = 4;
-const int allRoundsCompleted = 5;
-const int allRoundsNotCompleted = 6;
+const int ledSequenceSize = 8;
+const int allRoundsCompleted = ledSequenceSize + 1;
+const int allRoundsNotCompleted = ledSequenceSize + 2;
 const int undefined = -1;
 
 // Global variables
@@ -121,6 +121,7 @@ void startGame() {
   randomSeed(randomValue);
 
   Serial.println();
+  Serial.println();
   Serial.println("Game started");
   Serial.print("LED sequence: ");
   for (int i = 0; i < ledSequenceSize; i++) {
@@ -172,9 +173,9 @@ int verifyUserInput() {
 }
 
 void processUserInput() {
-  int answer = verifyUserInput();
+  int ledSelected = verifyUserInput();
 
-  if (answer == undefined) {
+  if (ledSelected == undefined) {
     return;
   }
 
@@ -191,10 +192,33 @@ void processUserInput() {
     ledsAnswered[0] = 2, ledsAnswered++ 
     ledsAnswered[1] = 4, ledsAnswered++
   */
-  if (answer == ledPins[ledsAnswered]) {
+  if (ledSelected == ledPins[ledsAnswered]) {
     ledsAnswered++;
+
+    Serial.println();
+    Serial.print("Round: ");
+    Serial.print(currentRound);
+    Serial.print(", LED Selected: ");
+    Serial.print(ledSelected);
+    Serial.print(", LED Pin: ");
+    Serial.print(ledPins[ledsAnswered]);
+    Serial.print(", LEDs ANSWERED: ");
+    Serial.print(ledsAnswered);
   } else {
     currentRound = allRoundsNotCompleted;
+
+    Serial.println();
+    Serial.print("Wrong! ");
+
+    Serial.print("LED Selected: ");
+    Serial.print(ledSelected);
+    Serial.print(" ");
+    Serial.print("LED Pin: ");
+    Serial.print(ledPins[ledsAnswered]);
+
+    Serial.print(" ");
+    Serial.print("Current round: ");
+    Serial.print(currentRound);
   }
 }
 
@@ -216,6 +240,9 @@ int currentGameState() {
       return WAITING_FOR_USER_INPUT;
     }
   } else if (currentRound == allRoundsCompleted) {
+    Serial.println();
+    Serial.print("USER WON: ");
+    Serial.print(currentRound);
     return VICTORY;
   } else {
     return GAME_OVER;
@@ -242,6 +269,9 @@ void prepareNextRound() {
     delay(1000);
 
     blinkLedsForCurrentRound();
+    Serial.println();
+    Serial.print("CURRENT ROUND: ");
+    Serial.print(currentRound);
   }
 }
 
@@ -250,8 +280,8 @@ void victoryBlinkSequence() {
     If "Try again?" has already been displayed, do nothing.
     This solves a strange flickering problem in the LCD.
   */
-  if (tryAgainDisplayed) return; // if "Try again?" has already been displayed, do nothing
-  
+  if (tryAgainDisplayed) return;  // if "Try again?" has already been displayed, do nothing
+
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("You won!");
@@ -278,11 +308,12 @@ void victoryBlinkSequence() {
   lcd.setCursor(0, 1);
   lcd.print("Try again?");
 
-  tryAgainDisplayed = true; // stating that "Try again?" has been displayed
+  tryAgainDisplayed = true;  // stating that "Try again?" has been displayed
+  levelAssigned = false;
 }
 
 void gameOverBlinkSequence() {
-  if (tryAgainDisplayed) return; 
+  if (tryAgainDisplayed) return;
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -306,6 +337,7 @@ void gameOverBlinkSequence() {
   lcd.print("Try again?");
 
   tryAgainDisplayed = true;
+  levelAssigned = false;
 }
 
 void restart() {
@@ -313,11 +345,13 @@ void restart() {
   ledsAnswered = 0;
   gameOverVictoryCount = 0;
   gameOverCount = 0;
+  gameInMenu = true;
   restartGame = false;
   levelAssigned = false;
   levelSelected = false;
   userIsPlaying = false;
-  gameInMenu = true;
+  tryAgainDisplayed = false;
+  level = "";
 
   lcd.clear();
   lcd.setCursor(0, 0);
@@ -372,17 +406,17 @@ void loop() {
 
   level = getLevel();
 
-  if (!levelSelected) {
+  if (gameInMenu) {
     displayLevelOptions(level);
-  }
 
-  if (!levelAssigned) {
-    assignLevel();
+    if (whiteBtnIsPressed) {
+      assignLevel();
 
-    if (levelAssigned) {
-      startGame();
-      levelSelected = true;
-      gameInMenu = false;
+      if (levelAssigned) {
+        startGame();
+        levelSelected = true;
+        gameInMenu = false;
+      }
     }
   }
 
